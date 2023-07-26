@@ -8,11 +8,14 @@ def adjust_brightness(image, brightness=1.0):
     bright_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     return bright_image
 
+# Check and create 'images' directory if not exists
+if not os.path.exists('images'):
+    os.makedirs('images')
+
 video = cv2.VideoCapture(0)
 if not video.isOpened():
     print('Error! Unable to open video.')
     exit(1)
-
 
 detector = MTCNN()
 
@@ -26,38 +29,42 @@ while os.path.exists(path):
     nameID = str(input("Enter Your Name Again: ")).lower()
     path = 'images/' + nameID
 
-os.makedirs(path)
+try:
+    os.makedirs(path)
+except OSError:
+    print('Error! Failed to create directory.')
+    exit(1)
 
 while True:
     ret, frame = video.read()
+
     if not ret:
         print('Error! Failed to read frame.')
         break
-    
-    # Adjust the brightness of the frame
+
     bright_frame = adjust_brightness(frame, brightness=1.5)
     
-    # Detect faces
     result = detector.detect_faces(bright_frame)
     if result != []:
         for person in result:
             bounding_box = person['box']
             keypoints = person['keypoints']
     
-            cv2.rectangle(bright_frame,
-                          (bounding_box[0], bounding_box[1]),
-                          (bounding_box[0]+bounding_box[2], bounding_box[1] + bounding_box[3]),
-                          (0,155,255),
-                          2)
+            x, y, w, h = bounding_box
+            x = max(0, x)
+            y = max(0, y)
+    
+            cv2.rectangle(bright_frame, (x, y), (x+w, y+h), (0,155,255), 2)
+            
             count += 1
             name = path + '/' + str(count) + '.jpg'
             print("Creating Images........." + name)
-            cv2.imwrite(name, bright_frame[bounding_box[1] : bounding_box[1] + bounding_box[3], bounding_box[0] : bounding_box[0]+bounding_box[2]])
+            
+            cropped_image = bright_frame[y : y + h, x : x + w]
+            cv2.imwrite(name, cropped_image)
     
-    # Display the frame
     cv2.imshow("WindowFrame", bright_frame)
     
-    # Exit the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     elif count > 500:
