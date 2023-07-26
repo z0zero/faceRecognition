@@ -30,6 +30,9 @@ os.makedirs(path)
 
 while True:
     ret, frame = video.read()
+    if not ret:
+        print('Error! Failed to read frame.')
+        break
     
     # Adjust the brightness of the frame
     bright_frame = adjust_brightness(frame, brightness=1.5)
