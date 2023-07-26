@@ -9,6 +9,10 @@ def adjust_brightness(image, brightness=1.0):
     return bright_image
 
 video = cv2.VideoCapture(0)
+if not video.isOpened():
+    print('Error! Unable to open video.')
+    exit(1)
+
 
 detector = MTCNN()
 
