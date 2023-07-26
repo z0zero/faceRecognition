@@ -15,19 +15,17 @@ detector = MTCNN()
 count=0
 
 nameID = str(input("Enter Your Name: ")).lower()
-
 path = 'images/' + nameID
 
-isExist = os.path.exists(path)
-
-if isExist:
+while os.path.exists(path):
     print("Name Already Taken")
-    nameID = str(input("Enter Your Name Again: "))
-else:
-    os.makedirs(path)
+    nameID = str(input("Enter Your Name Again: ")).lower()
+    path = 'images/' + nameID
+
+os.makedirs(path)
 
 while True:
-    ret,frame = video.read()
+    ret, frame = video.read()
     
     # Adjust the brightness of the frame
     bright_frame = adjust_brightness(frame, brightness=1.5)
@@ -45,7 +43,7 @@ while True:
                           (0,155,255),
                           2)
             count += 1
-            name = './images/' + nameID + '/' + str(count) + '.jpg'
+            name = path + '/' + str(count) + '.jpg'
             print("Creating Images........." + name)
             cv2.imwrite(name, bright_frame[bounding_box[1] : bounding_box[1] + bounding_box[3], bounding_box[0] : bounding_box[0]+bounding_box[2]])
     
