@@ -1,0 +1,56 @@
+MODULES:
+  IMPORT os.path, subprocess, tkinter, cv2, face_recognition, util
+
+CLASS App:
+
+  CONSTRUCTOR:
+    - CREATE main window with specific dimensions
+    - ADD "Login" button to main window linking to the "login" method
+    - ADD "Register new user" button to main window linking to the "register_new_user" method
+    - ADD webcam label to the main window
+    - ADD webcam feed to the webcam label
+    - SET database directory ('./db')
+    - IF database directory does not exist, CREATE it
+
+  FUNCTION add_webcam(label):
+    - IF webcam not initialized, INITIATE webcam
+    - SET label and PROCESS the webcam feed
+
+  FUNCTION process_webcam():
+    - CAPTURE frame from webcam
+    - CONVERT frame to RGB and DISPLAY it on the label
+    - REPEAT process every 20 milliseconds
+
+  FUNCTION login():
+    - SAVE the most recent webcam capture to a temporary file
+    - EXECUTE face recognition on the saved image against the database
+    - PARSE the output to get the recognized name
+    - IF name is unknown or no person detected, DISPLAY error message
+    - ELSE, DISPLAY welcome message
+
+  FUNCTION register_new_user():
+    - CREATE new window for registration
+    - ADD "Accept" button linking to the "accept_register_new_user" method
+    - ADD "Try Again" button linking to the "try_again_register_new_user" method
+    - DISPLAY most recent webcam capture in the window
+    - ADD text entry field for user's name
+    - ADD label prompting user to enter their name
+
+  FUNCTION try_again_register_new_user():
+    - DESTROY the registration window
+
+  FUNCTION add_img_to_label(label):
+    - DISPLAY the most recent webcam capture on the given label
+
+  FUNCTION start():
+    - BEGIN main window loop
+
+  FUNCTION accept_register_new_user():
+    - GET name entered by user
+    - SAVE the webcam capture with the user's name in the database directory
+    - DISPLAY success message
+    - CLOSE the registration window
+
+MAIN:
+  - INSTANTIATE App class
+  - START the application
