@@ -1,6 +1,8 @@
 import os.path
 import subprocess
 import numpy as np
+import csv
+import datetime
 
 import tkinter as tk
 import cv2
@@ -21,7 +23,14 @@ class App:
         self.db_dir = './db'
         if not os.path.exists(self.db_dir):
             os.mkdir(self.db_dir)
-        
+
+        # Define log file
+        self.log_file = './log.csv'
+        if not os.path.exists(self.log_file):
+            with open(self.log_file, mode='w', newline='') as file:
+                writer = csv.writer(file, delimiter=';')
+                writer.writerow(['Nomor', 'Nama', 'Waktu', 'Status'])
+
         self.register_new_user_button_main_window = util.get_button(self.main_window, "Register new user", "gray", 
                                                                     self.register_new_user, fg="black")
         self.register_new_user_button_main_window.place(x=750, y=400)
@@ -70,22 +79,70 @@ class App:
             if self.counting_down == 0:
                 # Execute face recognition after countdown finishes
                 self.execute_face_recognition()
-                del self.counting_down
+                if hasattr(self, 'counting_down'):
+                    del self.counting_down
+                # Stop further processing until user acknowledges the notification
+                return
             else:
-                self.main_window.after(1000, self.countdown)
+                if self.counting_down > 0:
+                    self.main_window.after(1000, self.countdown)
+                else:
+                    # Remove countdown text from the image
+                    self.process_webcam()
 
     def execute_face_recognition(self):
         unknown_img_path = './.tmp.jpg'
         cv2.imwrite(unknown_img_path, self.most_recent_capture_arr)
         output = str(subprocess.check_output(['face_recognition', self.db_dir, unknown_img_path]))
         name = output.split(',')[1][:-5]
-    
-        if name not in ['unknown_person', 'no_persons_found']:
-            util.msg_box('Success!', 'Welcome {}!'.format(name))
-        else:
-            util.msg_box('Ups...', 'Unknown user. Please register new user or try again.')
-        
+
         os.remove(unknown_img_path)
+
+        # Track the latest status of the user
+        latest_status = None
+
+        if name not in ['unknown_person', 'no_persons_found']:
+            # Check if user is already in the log file
+            with open(self.log_file, mode='r') as file:
+                reader = csv.reader(file, delimiter=';')
+                for row in reader:
+                    if row[1] == name:
+                        latest_status = row[3]
+
+            # If user's latest status is 'keluar' or the user is new, mark them as 'masuk'
+            if latest_status == 'keluar' or latest_status is None:
+                with open(self.log_file, mode='a', newline='') as file:
+                    writer = csv.writer(file, delimiter=';')
+                    nomor = self.get_next_nomor()
+                    waktu = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                    writer.writerow([nomor, name, waktu, 'masuk'])
+                response = util.msg_box('Success!', 'Welcome {}!'.format(name))
+            else:  # If user's latest status is 'masuk', mark them as 'keluar'
+                with open(self.log_file, mode='a', newline='') as file:
+                    writer = csv.writer(file, delimiter=';')
+                    nomor = self.get_next_nomor()
+                    waktu = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                    writer.writerow([nomor, name, waktu, 'keluar'])
+                response = util.msg_box('Success!', 'Goodbye {}!'.format(name))
+
+            # After displaying the message, wait for user acknowledgment
+            if response == 'ok':
+                self.process_webcam()
+        else:
+            # Direct user to register their face
+            response = util.msg_box('Ups...', 'Unknown user. Please register new user or try again.')
+            if response == 'ok':
+                self.register_new_user()
+
+    def get_next_nomor(self):
+        with open(self.log_file, mode='r') as file:
+            reader = csv.reader(file, delimiter=';')
+            nomor = 1
+            for i, row in enumerate(reader):
+                if i == 0:
+                    continue  # Skip header row
+                nomor = int(row[0]) + 1
+        return nomor
 
     def add_countdown_to_image(self, img_pil, countdown_value):
         # Convert PIL Image to OpenCV format
